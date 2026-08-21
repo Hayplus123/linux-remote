@@ -109,9 +109,56 @@
       cursor: not-allowed;
       border-color: transparent;
     }
+
+    /* Modal Overlay Styles for Screenshot Display */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-overlay img {
+      max-width: 100%;
+      max-height: 75vh;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      border: 1px solid #30363d;
+    }
+
+    .close-btn {
+      margin-top: 20px;
+      background: #238636;
+      color: #ffffff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 20px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+
+  <!-- POP-UP MODAL FOR SCREENSHOT -->
+  <div class="modal-overlay" id="screenshot-modal">
+    <img id="screenshot-img" src="" alt="Live Screenshot">
+    <button class="close-btn" id="close-btn">Close Capture</button>
+  </div>
 
   <div class="container">
     <div id="status-badge" class="status-badge offline">
@@ -152,7 +199,6 @@
       measurementId: "G-CTE6E1SWD9"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
@@ -160,9 +206,13 @@
     const statusText = document.getElementById('status-text');
     const buttons = document.querySelectorAll('.btn');
 
+    const modal = document.getElementById('screenshot-modal');
+    const screenshotImg = document.getElementById('screenshot-img');
+    const closeBtn = document.getElementById('close-btn');
+
     let heartbeatTimer = null;
 
-    // 1. Listen for status update heartbeat
+    // Monitor Online/Offline Status
     const statusRef = ref(db, '/device/status');
     onValue(statusRef, (snapshot) => {
       const data = snapshot.val();
@@ -196,11 +246,28 @@
       buttons.forEach(btn => btn.disabled = true);
     }
 
-    // 2. Attach button click listeners
+    // Command Helper
     function sendCommand(cmd) {
       const commandRef = ref(db, '/device/command');
       set(commandRef, cmd);
     }
+
+    // Listen for Screenshot Updates
+    const screenshotRef = ref(db, '/device/last_screenshot');
+    onValue(screenshotRef, (snapshot) => {
+      const imageDataUrl = snapshot.val();
+      if (imageDataUrl) {
+        screenshotImg.src = imageDataUrl;
+        modal.classList.add('active');
+      }
+    });
+
+    // Close Modal Button
+    closeBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
+      // Clear screenshot in database so it doesn't open automatically on page refresh
+      set(ref(db, '/device/last_screenshot'), null);
+    });
 
     document.getElementById('btn-screenshot').addEventListener('click', () => sendCommand('screenshot'));
     document.getElementById('btn-lock').addEventListener('click', () => sendCommand('lock'));
