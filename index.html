@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linux Remote Control</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #0d1117;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 24px;
+      padding: 28px 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .status-badge.online {
+      background-color: rgba(46, 160, 67, 0.15);
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+
+    .status-badge.offline {
+      background-color: rgba(248, 81, 73, 0.15);
+      color: #f85149;
+      border: 1px solid rgba(248, 81, 73, 0.3);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .online .dot { background-color: #3fb950; box-shadow: 0 0 8px #3fb950; }
+    .offline .dot { background-color: #f85149; }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 24px;
+      color: #f0f6fc;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .btn {
+      background: #21262d;
+      border: 1px solid #363b42;
+      color: #f0f6fc;
+      padding: 20px 12px;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .btn span {
+      font-size: 28px;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.95);
+      background: #30363d;
+    }
+
+    .btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: transparent;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div id="status-badge" class="status-badge offline">
+      <span class="dot"></span>
+      <span id="status-text">CONNECTING...</span>
+    </div>
+
+    <h1>Control Center</h1>
+
+    <div class="grid">
+      <button class="btn" id="btn-screenshot" disabled>
+        <span>📸</span> Screenshot
+      </button>
+      <button class="btn" id="btn-lock" disabled>
+        <span>🔒</span> Lock Screen
+      </button>
+      <button class="btn" id="btn-mute" disabled>
+        <span>🔇</span> Toggle Mute
+      </button>
+      <button class="btn" id="btn-browser" disabled>
+        <span>🦊</span> Open Firefox
+      </button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGMOrMCPO1lc7yjD_pbyLff75DCGphpaw",
+      authDomain: "linux-remote-control.firebaseapp.com",
+      databaseURL: "https://linux-remote-control-default-rtdb.firebaseio.com",
+      projectId: "linux-remote-control",
+      storageBucket: "linux-remote-control.firebasestorage.app",
+      messagingSenderId: "613219845352",
+      appId: "1:613219845352:web:95ee92e2df394513bdf55d",
+      measurementId: "G-CTE6E1SWD9"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const statusBadge = document.getElementById('status-badge');
+    const statusText = document.getElementById('status-text');
+    const buttons = document.querySelectorAll('.btn');
+
+    let heartbeatTimer = null;
+
+    // 1. Listen for status update heartbeat
+    const statusRef = ref(db, '/device/status');
+    onValue(statusRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data && data.last_seen) {
+        checkStatus(data.last_seen);
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        heartbeatTimer = setInterval(() => checkStatus(data.last_seen), 1000);
+      } else {
+        setOffline();
+      }
+    });
+
+    function checkStatus(lastSeenTimestamp) {
+      const currentSeconds = Math.floor(Date.now() / 1000);
+      if (currentSeconds - lastSeenTimestamp <= 10) {
+        setOnline();
+      } else {
+        setOffline();
+      }
+    }
+
+    function setOnline() {
+      statusBadge.className = 'status-badge online';
+      statusText.textContent = 'COMPUTER ONLINE';
+      buttons.forEach(btn => btn.disabled = false);
+    }
+
+    function setOffline() {
+      statusBadge.className = 'status-badge offline';
+      statusText.textContent = 'OFFLINE COMPUTER';
+      buttons.forEach(btn => btn.disabled = true);
+    }
+
+    // 2. Attach button click listeners
+    function sendCommand(cmd) {
+      const commandRef = ref(db, '/device/command');
+      set(commandRef, cmd);
+    }
+
+    document.getElementById('btn-screenshot').addEventListener('click', () => sendCommand('screenshot'));
+    document.getElementById('btn-lock').addEventListener('click', () => sendCommand('lock'));
+    document.getElementById('btn-mute').addEventListener('click', () => sendCommand('mute'));
+    document.getElementById('btn-browser').addEventListener('click', () => sendCommand('browser'));
+  </script>
+</body>
+</html>
