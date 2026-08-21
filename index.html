@@ -69,22 +69,31 @@
 
     h1 {
       font-size: 22px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       color: #f0f6fc;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #8b949e;
+      text-align: left;
+      margin: 18px 0 8px 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
-      margin-bottom: 20px;
     }
 
     .btn {
       background: #21262d;
       border: 1px solid #363b42;
       color: #f0f6fc;
-      padding: 20px 12px;
+      padding: 18px 12px;
       border-radius: 16px;
       font-size: 15px;
       font-weight: 600;
@@ -92,12 +101,20 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       transition: all 0.2s ease;
     }
 
+    .btn.danger {
+      border-color: rgba(248, 81, 73, 0.4);
+    }
+
+    .btn.danger:active:not(:disabled) {
+      background: rgba(248, 81, 73, 0.15);
+    }
+
     .btn span {
-      font-size: 28px;
+      font-size: 26px;
     }
 
     .btn:active:not(:disabled) {
@@ -120,6 +137,7 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      margin-top: 14px;
     }
 
     .volume-header {
@@ -196,6 +214,7 @@
 
     <h1>Control Center</h1>
 
+    <div class="section-title">Actions</div>
     <div class="grid">
       <button class="btn" id="btn-screenshot" disabled>
         <span>📸</span> Screenshot
@@ -218,6 +237,16 @@
         <span id="volume-val">50%</span>
       </div>
       <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="50" disabled>
+    </div>
+
+    <div class="section-title">Power</div>
+    <div class="grid">
+      <button class="btn danger" id="btn-restart" disabled>
+        <span>🔄</span> Restart
+      </button>
+      <button class="btn danger" id="btn-shutdown" disabled>
+        <span>⏻</span> Shutdown
+      </button>
     </div>
   </div>
 
@@ -287,13 +316,16 @@
       volumeSlider.disabled = true;
     }
 
-    // Command Helper
-    function sendCommand(cmd) {
+    // Command Helper with Optional Confirmation
+    function sendCommand(cmd, confirmMessage = null) {
+      if (confirmMessage && !confirm(confirmMessage)) {
+        return;
+      }
       const commandRef = ref(db, '/device/command');
       set(commandRef, cmd);
     }
 
-    // Volume Slider Handler (updates text instantly + sends to Firebase on drag)
+    // Volume Slider Handler
     volumeSlider.addEventListener('input', (e) => {
       const val = e.target.value;
       volumeVal.textContent = val + '%';
@@ -325,6 +357,10 @@
     document.getElementById('btn-lock').addEventListener('click', () => sendCommand('lock'));
     document.getElementById('btn-mute').addEventListener('click', () => sendCommand('mute'));
     document.getElementById('btn-browser').addEventListener('click', () => sendCommand('browser'));
+    
+    // Power Buttons with Safe Confirmations
+    document.getElementById('btn-restart').addEventListener('click', () => sendCommand('restart', 'Are you sure you want to restart your computer?'));
+    document.getElementById('btn-shutdown').addEventListener('click', () => sendCommand('shutdown', 'Are you sure you want to shut down your computer?'));
   </script>
 </body>
 </html>
