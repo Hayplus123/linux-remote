@@ -14,7 +14,7 @@
       -webkit-user-select: none;
     }
 
-    /* FIX: Allow normal typing, spacing, and selection in input fields */
+    /* Allow normal typing, spacing, and selection in input fields */
     input, textarea {
       user-select: text;
       -webkit-user-select: text;
@@ -518,6 +518,16 @@
           <button class="click-btn" id="btn-right-click">Right Click</button>
         </div>
       </div>
+
+      <!-- MOUSE WHEEL SCROLL MODULE -->
+      <div class="dpad-container" style="margin-top: 14px;">
+        <div class="section-title" style="margin:0; width:100%;">Mouse Wheel Scroll</div>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 8px;">
+          <button class="dpad-btn" id="btn-scroll-up" style="flex: 1; border-radius: 8px; font-size: 15px;">▲ Scroll Up</button>
+          <div style="padding: 0 10px; font-size: 20px; color: #8b949e;" title="Mouse Wheel">🖱️⚙️</div>
+          <button class="dpad-btn" id="btn-scroll-down" style="flex: 1; border-radius: 8px; font-size: 15px;">▼ Scroll Down</button>
+        </div>
+      </div>
     </div>
 
     <!-- OPTION 2: PHYSICAL KEYS VIEW -->
@@ -718,7 +728,7 @@
       });
     });
 
-    // Continuous Hold Logic for Mouse
+    // Continuous Hold Logic for Mouse / Scroll
     let moveInterval = null;
 
     function startMoving(btnElement, cmd) {
@@ -738,28 +748,33 @@
       }
     }
 
-    // Virtual D-Pad Event Listeners
+    // Virtual D-Pad & Scroll Event Listeners
     const btnUp = document.getElementById('btn-up');
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
+    const btnScrollUp = document.getElementById('btn-scroll-up');
+    const btnScrollDown = document.getElementById('btn-scroll-down');
 
     btnUp.addEventListener('mousedown', () => startMoving(btnUp, 'mouse_up'));
     btnDown.addEventListener('mousedown', () => startMoving(btnDown, 'mouse_down'));
     btnLeft.addEventListener('mousedown', () => startMoving(btnLeft, 'mouse_left'));
     btnRight.addEventListener('mousedown', () => startMoving(btnRight, 'mouse_right'));
+    btnScrollUp.addEventListener('mousedown', () => startMoving(btnScrollUp, 'scroll_up'));
+    btnScrollDown.addEventListener('mousedown', () => startMoving(btnScrollDown, 'scroll_down'));
 
     btnUp.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnUp, 'mouse_up'); });
     btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnDown, 'mouse_down'); });
     btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnLeft, 'mouse_left'); });
     btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnRight, 'mouse_right'); });
+    btnScrollUp.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnScrollUp, 'scroll_up'); });
+    btnScrollDown.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnScrollDown, 'scroll_down'); });
 
     // Physical Keyboard Listeners (Arrows = Move, Spacebar = Left Click)
     const activeKeys = {};
     window.addEventListener('keydown', (e) => {
       if (!mouseDrawer.classList.contains('open') || !tabPhysical.classList.contains('active')) return;
       
-      // FIX: Don't intercept spacebar if you are currently typing in an input or textarea!
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
 
       const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
