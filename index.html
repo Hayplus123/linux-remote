@@ -159,6 +159,16 @@
       color: #f0f6fc;
       font-size: 16px;
     }
+    .spacebar-cap {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px;
+      font-weight: bold;
+      color: #f0f6fc;
+      font-size: 13px;
+      width: 100%;
+    }
 
     .status-badge {
       display: inline-flex;
@@ -387,7 +397,7 @@
       <div class="physical-box">
         <div class="physical-status">⌨️ Keyboard Mode Active</div>
         <p style="font-size: 13px; color: #8b949e; line-height: 1.4;">
-          Press and hold the <b>Arrow Keys</b> on your physical keyboard to glide the mouse cursor across your remote screen!
+          Hold <b>Arrow Keys</b> to move cursor. Tap the <b>Spacebar</b> to Left Click!
         </p>
         <div class="key-badge-container">
           <div></div>
@@ -397,6 +407,7 @@
           <div class="key-cap">▼</div>
           <div class="key-cap">►</div>
         </div>
+        <div class="spacebar-cap">Spacebar [ Left Click ]</div>
       </div>
     </div>
   </div>
@@ -553,7 +564,7 @@
       set(commandRef, cmd);
     }
 
-    // Continuous Hold Logic (Shared by Virtual & Physical keys)
+    // Continuous Hold Logic
     let moveInterval = null;
 
     function startMoving(btnElement, cmd) {
@@ -589,28 +600,38 @@
     btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnLeft, 'mouse_left'); });
     btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnRight, 'mouse_right'); });
 
-    // Physical Keyboard Arrow Key Listeners (Active when Physical mode is selected and drawer is open)
+    // Physical Keyboard Listeners (Arrows = Move, Spacebar = Left Click)
     const activeKeys = {};
     window.addEventListener('keydown', (e) => {
-      // Only trigger if Physical tab is active and drawer is open
       if (!mouseDrawer.classList.contains('open') || !tabPhysical.classList.contains('active')) return;
       
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+      const isSpace = e.key === ' ' || e.code === 'Space';
+
+      if (isArrow || isSpace) {
         e.preventDefault(); // Prevent page scrolling
-        if (activeKeys[e.key]) return; // prevent repeating keydown trigger spam
+        if (activeKeys[e.key] || activeKeys[e.code]) return;
         activeKeys[e.key] = true;
+        activeKeys[e.code] = true;
 
         if (e.key === 'ArrowUp') startMoving(null, 'mouse_up');
         if (e.key === 'ArrowDown') startMoving(null, 'mouse_down');
         if (e.key === 'ArrowLeft') startMoving(null, 'mouse_left');
         if (e.key === 'ArrowRight') startMoving(null, 'mouse_right');
+        if (isSpace) sendCommand('click_left');
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+      const isSpace = e.key === ' ' || e.code === 'Space';
+
+      if (isArrow || isSpace) {
         activeKeys[e.key] = false;
-        stopMoving();
+        activeKeys[e.code] = false;
+        if (isArrow) {
+          stopMoving();
+        }
       }
     });
 
