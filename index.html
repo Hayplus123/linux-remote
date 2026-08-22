@@ -169,6 +169,7 @@
       <button class="btn" id="btn-lock" disabled><span>🔒</span> Lock Screen</button>
       <button class="btn" id="btn-mute" disabled><span>🔇</span> Toggle Mute</button>
       <button class="btn" id="btn-browser" disabled><span>🦊</span> Open Firefox</button>
+      <button class="btn" id="btn-close-tab" disabled><span>❌</span> Close Tab</button>
     </div>
 
     <!-- VOLUME SLIDER MODULE -->
@@ -327,6 +328,7 @@
     document.getElementById('btn-lock').addEventListener('click', () => sendCommand('lock'));
     document.getElementById('btn-mute').addEventListener('click', () => sendCommand('mute'));
     document.getElementById('btn-browser').addEventListener('click', () => sendCommand('browser'));
+    document.getElementById('btn-close-tab').addEventListener('click', () => sendCommand('close_tab'));
     
     // Power Buttons with Safe Confirmations
     document.getElementById('btn-restart').addEventListener('click', () => sendCommand('restart', 'Are you sure you want to restart your computer?'));
