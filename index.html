@@ -759,6 +759,9 @@
     window.addEventListener('keydown', (e) => {
       if (!mouseDrawer.classList.contains('open') || !tabPhysical.classList.contains('active')) return;
       
+      // FIX: Don't intercept spacebar if you are currently typing in an input or textarea!
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
       const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
       const isSpace = e.key === ' ' || e.code === 'Space';
 
