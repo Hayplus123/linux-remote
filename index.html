@@ -22,6 +22,7 @@
       align-items: center;
       min-height: 100vh;
       padding: 20px;
+      overflow-x: hidden;
     }
 
     .container {
@@ -33,6 +34,130 @@
       padding: 28px 20px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
       text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* EDGE DRAWER FOR MOUSE CONTROL CENTER */
+    .drawer-tab {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #238636;
+      color: #ffffff;
+      padding: 16px 10px;
+      border-radius: 12px 0 0 12px;
+      cursor: pointer;
+      font-weight: 600;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      letter-spacing: 1px;
+      box-shadow: -4px 0 15px rgba(0,0,0,0.4);
+      z-index: 100;
+      transition: background 0.2s, right 0.3s;
+    }
+    .drawer-tab:hover { background: #2ea043; }
+
+    .mouse-drawer {
+      position: fixed;
+      top: 0;
+      right: -400px;
+      width: 360px;
+      height: 100vh;
+      background: #161b22;
+      border-left: 1px solid #30363d;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.7);
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      transition: right 0.35s cubic-bezier(0.1, 1, 0.1, 1);
+    }
+    .mouse-drawer.open { right: 0; }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 12px;
+    }
+    .drawer-header h2 { font-size: 18px; color: #f0f6fc; }
+    .close-drawer {
+      background: #21262d; border: 1px solid #363b42; color: #f0f6fc;
+      padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 14px;
+    }
+    .close-drawer:hover { background: #30363d; }
+
+    /* MODE SELECTOR TABS */
+    .mode-selector {
+      display: flex;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .mode-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #8b949e;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-tab.active {
+      background: #21262d;
+      color: #f0f6fc;
+      border: 1px solid #363b42;
+    }
+
+    .mode-content { display: none; flex-direction: column; align-items: center; gap: 14px; flex: 1; }
+    .mode-content.active { display: flex; }
+
+    /* PHYSICAL KEYBOARD MODE UI */
+    .physical-box {
+      background: #21262d;
+      border: 1px solid #363b42;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-top: 10px;
+    }
+    .physical-status {
+      font-size: 14px;
+      color: #3fb950;
+      background: rgba(46, 160, 67, 0.15);
+      border: 1px solid rgba(63, 185, 80, 0.3);
+      padding: 10px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .key-badge-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      max-width: 180px;
+      margin: 0 auto;
+    }
+    .key-cap {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px;
+      font-weight: bold;
+      color: #f0f6fc;
+      font-size: 16px;
     }
 
     .status-badge {
@@ -94,7 +219,7 @@
       border: 1px solid #363b42;
       border-radius: 16px;
       padding: 16px;
-      margin-top: 14px;
+      width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -129,10 +254,7 @@
       border-color: #2ea043;
     }
 
-    .dpad-btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
+    .dpad-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
     .click-bar {
       display: flex;
@@ -224,6 +346,61 @@
     <button class="close-btn" id="close-btn">Close Capture</button>
   </div>
 
+  <!-- SLIDING MOUSE CONTROL CENTER DRAWER -->
+  <div class="drawer-tab" id="drawer-tab">🎮 Mouse Center</div>
+  
+  <div class="mouse-drawer" id="mouse-drawer">
+    <div class="drawer-header">
+      <h2>Mouse Control Center</h2>
+      <button class="close-drawer" id="close-drawer">Close ✕</button>
+    </div>
+
+    <!-- Mode Selector: Virtual vs Physical -->
+    <div class="mode-selector">
+      <button class="mode-tab active" id="tab-virtual">1. Virtual Keys</button>
+      <button class="mode-tab" id="tab-physical">2. Physical Keys</button>
+    </div>
+
+    <!-- OPTION 1: VIRTUAL KEYS VIEW -->
+    <div class="mode-content active" id="content-virtual">
+      <div class="dpad-container">
+        <div class="section-title" style="margin:0; width:100%;">Hold to Move Mouse</div>
+        <div class="dpad-grid">
+          <div></div>
+          <button class="dpad-btn" id="btn-up">▲</button>
+          <div></div>
+          <button class="dpad-btn" id="btn-left">◄</button>
+          <button class="dpad-btn" id="btn-click-left" style="font-size: 13px;">CLICK</button>
+          <button class="dpad-btn" id="btn-right">►</button>
+          <div></div>
+          <button class="dpad-btn" id="btn-down">▼</button>
+          <div></div>
+        </div>
+        <div class="click-bar">
+          <button class="click-btn" id="btn-right-click">Right Click</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPTION 2: PHYSICAL KEYS VIEW -->
+    <div class="mode-content" id="content-physical">
+      <div class="physical-box">
+        <div class="physical-status">⌨️ Keyboard Mode Active</div>
+        <p style="font-size: 13px; color: #8b949e; line-height: 1.4;">
+          Press and hold the <b>Arrow Keys</b> on your physical keyboard to glide the mouse cursor across your remote screen!
+        </p>
+        <div class="key-badge-container">
+          <div></div>
+          <div class="key-cap">▲</div>
+          <div></div>
+          <div class="key-cap">◄</div>
+          <div class="key-cap">▼</div>
+          <div class="key-cap">►</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
     <div id="status-badge" class="status-badge offline">
       <span class="dot"></span>
@@ -239,25 +416,6 @@
       <button class="btn" id="btn-mute" disabled><span>🔇</span> Toggle Mute</button>
       <button class="btn" id="btn-browser" disabled><span>🦊</span> Open Firefox</button>
       <button class="btn" id="btn-close-tab" disabled><span>❌</span> Close Tab</button>
-    </div>
-
-    <!-- MOUSE & D-PAD MODULE -->
-    <div class="dpad-container">
-      <div class="section-title" style="margin:0; width:100%;">🕹️ Mouse D-Pad (Hold to Move)</div>
-      <div class="dpad-grid">
-        <div></div>
-        <button class="dpad-btn" id="btn-up" disabled>▲</button>
-        <div></div>
-        <button class="dpad-btn" id="btn-left" disabled>◄</button>
-        <button class="dpad-btn" id="btn-click-left" disabled style="font-size: 13px;">CLICK</button>
-        <button class="dpad-btn" id="btn-right" disabled>►</button>
-        <div></div>
-        <button class="dpad-btn" id="btn-down" disabled>▼</button>
-        <div></div>
-      </div>
-      <div class="click-bar">
-        <button class="click-btn" id="btn-right-click" disabled>Right Click</button>
-      </div>
     </div>
 
     <!-- VOLUME SLIDER MODULE -->
@@ -317,7 +475,35 @@
     const screenshotImg = document.getElementById('screenshot-img');
     const closeBtn = document.getElementById('close-btn');
 
+    // Drawer Elements
+    const drawerTab = document.getElementById('drawer-tab');
+    const mouseDrawer = document.getElementById('mouse-drawer');
+    const closeDrawerBtn = document.getElementById('close-drawer');
+    const tabVirtual = document.getElementById('tab-virtual');
+    const tabPhysical = document.getElementById('tab-physical');
+    const contentVirtual = document.getElementById('content-virtual');
+    const contentPhysical = document.getElementById('content-physical');
+
     let heartbeatTimer = null;
+
+    // Drawer Open/Close Logic
+    drawerTab.addEventListener('click', () => mouseDrawer.classList.add('open'));
+    closeDrawerBtn.addEventListener('click', () => mouseDrawer.classList.remove('open'));
+
+    // Switch between Virtual and Physical tabs
+    tabVirtual.addEventListener('click', () => {
+      tabVirtual.classList.add('active');
+      tabPhysical.classList.remove('active');
+      contentVirtual.classList.add('active');
+      contentPhysical.classList.remove('active');
+    });
+
+    tabPhysical.addEventListener('click', () => {
+      tabPhysical.classList.add('active');
+      tabVirtual.classList.remove('active');
+      contentPhysical.classList.add('active');
+      contentVirtual.classList.remove('active');
+    });
 
     // Monitor Online/Offline Status
     const statusRef = ref(db, '/device/status');
@@ -362,19 +548,17 @@
     }
 
     function sendCommand(cmd, confirmMessage = null) {
-      if (confirmMessage && !confirm(confirmMessage)) {
-        return;
-      }
+      if (confirmMessage && !confirm(confirmMessage)) return;
       const commandRef = ref(db, '/device/command');
       set(commandRef, cmd);
     }
 
-    // D-Pad Continuous Hold Logic
+    // Continuous Hold Logic (Shared by Virtual & Physical keys)
     let moveInterval = null;
 
     function startMoving(btnElement, cmd) {
       if (moveInterval) return;
-      btnElement.classList.add('holding');
+      if (btnElement) btnElement.classList.add('holding');
       sendCommand(cmd);
       moveInterval = setInterval(() => {
         sendCommand(cmd);
@@ -389,22 +573,46 @@
       }
     }
 
+    // Virtual D-Pad Event Listeners
     const btnUp = document.getElementById('btn-up');
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
 
-    // Mouse events
     btnUp.addEventListener('mousedown', () => startMoving(btnUp, 'mouse_up'));
     btnDown.addEventListener('mousedown', () => startMoving(btnDown, 'mouse_down'));
     btnLeft.addEventListener('mousedown', () => startMoving(btnLeft, 'mouse_left'));
     btnRight.addEventListener('mousedown', () => startMoving(btnRight, 'mouse_right'));
 
-    // Touch events for mobile
     btnUp.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnUp, 'mouse_up'); });
     btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnDown, 'mouse_down'); });
     btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnLeft, 'mouse_left'); });
     btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnRight, 'mouse_right'); });
+
+    // Physical Keyboard Arrow Key Listeners (Active when Physical mode is selected and drawer is open)
+    const activeKeys = {};
+    window.addEventListener('keydown', (e) => {
+      // Only trigger if Physical tab is active and drawer is open
+      if (!mouseDrawer.classList.contains('open') || !tabPhysical.classList.contains('active')) return;
+      
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault(); // Prevent page scrolling
+        if (activeKeys[e.key]) return; // prevent repeating keydown trigger spam
+        activeKeys[e.key] = true;
+
+        if (e.key === 'ArrowUp') startMoving(null, 'mouse_up');
+        if (e.key === 'ArrowDown') startMoving(null, 'mouse_down');
+        if (e.key === 'ArrowLeft') startMoving(null, 'mouse_left');
+        if (e.key === 'ArrowRight') startMoving(null, 'mouse_right');
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        activeKeys[e.key] = false;
+        stopMoving();
+      }
+    });
 
     window.addEventListener('mouseup', stopMoving);
     window.addEventListener('touchend', stopMoving);
@@ -413,16 +621,10 @@
     document.getElementById('btn-click-left').addEventListener('click', () => sendCommand('click_left'));
     document.getElementById('btn-right-click').addEventListener('click', () => sendCommand('click_right'));
 
-    // Volume Slider Handler
-    volumeSlider.addEventListener('input', (e) => {
-      volumeVal.textContent = e.target.value + '%';
-    });
+    // Volume Slider & Messaging Handlers
+    volumeSlider.addEventListener('input', (e) => { volumeVal.textContent = e.target.value + '%'; });
+    volumeSlider.addEventListener('change', (e) => { set(ref(db, '/device/volume'), e.target.value); });
 
-    volumeSlider.addEventListener('change', (e) => {
-      set(ref(db, '/device/volume'), e.target.value);
-    });
-
-    // Send Message Handler
     sendMsgBtn.addEventListener('click', () => {
       const text = popupInput.value.trim();
       if (text) {
@@ -431,11 +633,9 @@
       }
     });
 
-    popupInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMsgBtn.click();
-    });
+    popupInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMsgBtn.click(); });
 
-    // Listen for Screenshot Updates
+    // Screenshot Modal Listeners
     onValue(ref(db, '/device/last_screenshot'), (snapshot) => {
       const imageDataUrl = snapshot.val();
       if (imageDataUrl) {
