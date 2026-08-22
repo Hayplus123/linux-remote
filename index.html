@@ -10,6 +10,8 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
     }
 
     body {
@@ -85,6 +87,73 @@
     .btn span { font-size: 26px; }
     .btn:active:not(:disabled) { transform: scale(0.95); background: #30363d; }
     .btn:disabled { opacity: 0.35; cursor: not-allowed; border-color: transparent; }
+
+    /* D-PAD STYLES */
+    .dpad-container {
+      background: #21262d;
+      border: 1px solid #363b42;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dpad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 100%;
+      max-width: 240px;
+    }
+
+    .dpad-btn {
+      background: #161b22;
+      border: 1px solid #30363d;
+      color: #f0f6fc;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.1s ease;
+    }
+
+    .dpad-btn:active:not(:disabled), .dpad-btn.holding {
+      background: #238636;
+      border-color: #2ea043;
+    }
+
+    .dpad-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .click-bar {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .click-btn {
+      flex: 1;
+      background: #161b22;
+      border: 1px solid #30363d;
+      color: #f0f6fc;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .click-btn:active:not(:disabled) { background: #30363d; }
+    .click-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* Volume Slider */
     .volume-card {
@@ -172,6 +241,25 @@
       <button class="btn" id="btn-close-tab" disabled><span>❌</span> Close Tab</button>
     </div>
 
+    <!-- MOUSE & D-PAD MODULE -->
+    <div class="dpad-container">
+      <div class="section-title" style="margin:0; width:100%;">🕹️ Mouse D-Pad (Hold to Move)</div>
+      <div class="dpad-grid">
+        <div></div>
+        <button class="dpad-btn" id="btn-up" disabled>▲</button>
+        <div></div>
+        <button class="dpad-btn" id="btn-left" disabled>◄</button>
+        <button class="dpad-btn" id="btn-click-left" disabled style="font-size: 13px;">CLICK</button>
+        <button class="dpad-btn" id="btn-right" disabled>►</button>
+        <div></div>
+        <button class="dpad-btn" id="btn-down" disabled>▼</button>
+        <div></div>
+      </div>
+      <div class="click-bar">
+        <button class="click-btn" id="btn-right-click" disabled>Right Click</button>
+      </div>
+    </div>
+
     <!-- VOLUME SLIDER MODULE -->
     <div class="volume-card">
       <div class="volume-header">
@@ -218,10 +306,10 @@
     const statusBadge = document.getElementById('status-badge');
     const statusText = document.getElementById('status-text');
     const buttons = document.querySelectorAll('.btn');
+    const dpadButtons = document.querySelectorAll('.dpad-btn, .click-btn');
     const volumeSlider = document.getElementById('volume-slider');
     const volumeVal = document.getElementById('volume-val');
     
-    // Popup Message Elements
     const popupInput = document.getElementById('popup-input');
     const sendMsgBtn = document.getElementById('btn-send-msg');
 
@@ -257,6 +345,7 @@
       statusBadge.className = 'status-badge online';
       statusText.textContent = 'COMPUTER ONLINE';
       buttons.forEach(btn => btn.disabled = false);
+      dpadButtons.forEach(btn => btn.disabled = false);
       volumeSlider.disabled = false;
       popupInput.disabled = false;
       sendMsgBtn.disabled = false;
@@ -266,12 +355,12 @@
       statusBadge.className = 'status-badge offline';
       statusText.textContent = 'OFFLINE COMPUTER';
       buttons.forEach(btn => btn.disabled = true);
+      dpadButtons.forEach(btn => btn.disabled = true);
       volumeSlider.disabled = true;
       popupInput.disabled = true;
       sendMsgBtn.disabled = true;
     }
 
-    // Command Helper with Optional Confirmation
     function sendCommand(cmd, confirmMessage = null) {
       if (confirmMessage && !confirm(confirmMessage)) {
         return;
@@ -280,37 +369,74 @@
       set(commandRef, cmd);
     }
 
+    // D-Pad Continuous Hold Logic
+    let moveInterval = null;
+
+    function startMoving(btnElement, cmd) {
+      if (moveInterval) return;
+      btnElement.classList.add('holding');
+      sendCommand(cmd);
+      moveInterval = setInterval(() => {
+        sendCommand(cmd);
+      }, 100);
+    }
+
+    function stopMoving() {
+      if (moveInterval) {
+        clearInterval(moveInterval);
+        moveInterval = null;
+        document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('holding'));
+      }
+    }
+
+    const btnUp = document.getElementById('btn-up');
+    const btnDown = document.getElementById('btn-down');
+    const btnLeft = document.getElementById('btn-left');
+    const btnRight = document.getElementById('btn-right');
+
+    // Mouse events
+    btnUp.addEventListener('mousedown', () => startMoving(btnUp, 'mouse_up'));
+    btnDown.addEventListener('mousedown', () => startMoving(btnDown, 'mouse_down'));
+    btnLeft.addEventListener('mousedown', () => startMoving(btnLeft, 'mouse_left'));
+    btnRight.addEventListener('mousedown', () => startMoving(btnRight, 'mouse_right'));
+
+    // Touch events for mobile
+    btnUp.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnUp, 'mouse_up'); });
+    btnDown.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnDown, 'mouse_down'); });
+    btnLeft.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnLeft, 'mouse_left'); });
+    btnRight.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(btnRight, 'mouse_right'); });
+
+    window.addEventListener('mouseup', stopMoving);
+    window.addEventListener('touchend', stopMoving);
+
+    // Standard Clicks
+    document.getElementById('btn-click-left').addEventListener('click', () => sendCommand('click_left'));
+    document.getElementById('btn-right-click').addEventListener('click', () => sendCommand('click_right'));
+
     // Volume Slider Handler
     volumeSlider.addEventListener('input', (e) => {
-      const val = e.target.value;
-      volumeVal.textContent = val + '%';
+      volumeVal.textContent = e.target.value + '%';
     });
 
     volumeSlider.addEventListener('change', (e) => {
-      const val = e.target.value;
-      const volumeRef = ref(db, '/device/volume');
-      set(volumeRef, val);
+      set(ref(db, '/device/volume'), e.target.value);
     });
 
     // Send Message Handler
     sendMsgBtn.addEventListener('click', () => {
       const text = popupInput.value.trim();
       if (text) {
-        const messageRef = ref(db, '/device/popup_message');
-        set(messageRef, text);
-        popupInput.value = ''; // Clear input after sending
+        set(ref(db, '/device/popup_message'), text);
+        popupInput.value = '';
       }
     });
 
     popupInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        sendMsgBtn.click();
-      }
+      if (e.key === 'Enter') sendMsgBtn.click();
     });
 
     // Listen for Screenshot Updates
-    const screenshotRef = ref(db, '/device/last_screenshot');
-    onValue(screenshotRef, (snapshot) => {
+    onValue(ref(db, '/device/last_screenshot'), (snapshot) => {
       const imageDataUrl = snapshot.val();
       if (imageDataUrl) {
         screenshotImg.src = imageDataUrl;
@@ -318,7 +444,6 @@
       }
     });
 
-    // Close Modal Button
     closeBtn.addEventListener('click', () => {
       modal.classList.remove('active');
       set(ref(db, '/device/last_screenshot'), null);
@@ -330,7 +455,6 @@
     document.getElementById('btn-browser').addEventListener('click', () => sendCommand('browser'));
     document.getElementById('btn-close-tab').addEventListener('click', () => sendCommand('close_tab'));
     
-    // Power Buttons with Safe Confirmations
     document.getElementById('btn-restart').addEventListener('click', () => sendCommand('restart', 'Are you sure you want to restart your computer?'));
     document.getElementById('btn-shutdown').addEventListener('click', () => sendCommand('shutdown', 'Are you sure you want to shut down your computer?'));
   </script>
