@@ -794,6 +794,20 @@
       }
     });
 
+    // Physical Mouse Wheel Listener (Scrolls your Linux PC when you scroll on this device)
+    window.addEventListener('wheel', (e) => {
+      if (!mouseDrawer.classList.contains('open') || !tabPhysical.classList.contains('active')) return;
+      
+      e.preventDefault();
+      
+      // DeltaY is negative when scrolling up, positive when scrolling down
+      if (e.deltaY < 0) {
+        sendCommand('scroll_up');
+      } else {
+        sendCommand('scroll_down');
+      }
+    }, { passive: false });
+
     window.addEventListener('keyup', (e) => {
       const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
       const isSpace = e.key === ' ' || e.code === 'Space';
