@@ -38,8 +38,46 @@
       z-index: 1;
     }
 
-    /* EDGE DRAWER FOR MOUSE CONTROL CENTER */
-    .drawer-tab {
+    /* LEFT SIDE DRAWER (KEYBOARD CENTER) */
+    .drawer-tab-left {
+      position: fixed;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #1f6feb;
+      color: #ffffff;
+      padding: 16px 10px;
+      border-radius: 0 12px 12px 0;
+      cursor: pointer;
+      font-weight: 600;
+      writing-mode: vertical-lr;
+      text-orientation: mixed;
+      letter-spacing: 1px;
+      box-shadow: 4px 0 15px rgba(0,0,0,0.4);
+      z-index: 100;
+      transition: background 0.2s, left 0.3s;
+    }
+    .drawer-tab-left:hover { background: #388bfd; }
+
+    .keyboard-drawer {
+      position: fixed;
+      top: 0;
+      left: -400px;
+      width: 360px;
+      height: 100vh;
+      background: #161b22;
+      border-right: 1px solid #30363d;
+      box-shadow: 10px 0 30px rgba(0,0,0,0.7);
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      transition: left 0.35s cubic-bezier(0.1, 1, 0.1, 1);
+    }
+    .keyboard-drawer.open { left: 0; }
+
+    /* RIGHT SIDE DRAWER (MOUSE CENTER) */
+    .drawer-tab-right {
       position: fixed;
       right: 0;
       top: 50%;
@@ -57,7 +95,7 @@
       z-index: 100;
       transition: background 0.2s, right 0.3s;
     }
-    .drawer-tab:hover { background: #2ea043; }
+    .drawer-tab-right:hover { background: #2ea043; }
 
     .mouse-drawer {
       position: fixed;
@@ -120,6 +158,63 @@
 
     .mode-content { display: none; flex-direction: column; align-items: center; gap: 14px; flex: 1; }
     .mode-content.active { display: flex; }
+
+    /* TYPING BOX STYLES */
+    .typing-box {
+      background: #21262d;
+      border: 1px solid #363b42;
+      border-radius: 16px;
+      padding: 16px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .typing-textarea {
+      width: 100%;
+      height: 90px;
+      background: #0d1117;
+      border: 1px solid #363b42;
+      border-radius: 12px;
+      padding: 12px;
+      color: #ffffff;
+      font-size: 14px;
+      outline: none;
+      resize: none;
+    }
+    .typing-textarea:focus { border-color: #1f6feb; }
+    .type-send-btn {
+      background: #1f6feb;
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .type-send-btn:active { background: #388bfd; }
+
+    /* SPECIAL KEYS GRID */
+    .keys-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .key-btn {
+      background: #21262d;
+      border: 1px solid #363b42;
+      color: #f0f6fc;
+      padding: 12px 8px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .key-btn:active { background: #30363d; border-color: #1f6feb; }
 
     /* PHYSICAL KEYBOARD MODE UI */
     .physical-box {
@@ -356,13 +451,40 @@
     <button class="close-btn" id="close-btn">Close Capture</button>
   </div>
 
-  <!-- SLIDING MOUSE CONTROL CENTER DRAWER -->
-  <div class="drawer-tab" id="drawer-tab">🎮 Mouse Center</div>
-  
+  <!-- LEFT SIDE DRAWER: KEYBOARD CENTER -->
+  <div class="drawer-tab-left" id="keyboard-tab">⌨️ Keyboard Center</div>
+  <div class="keyboard-drawer" id="keyboard-drawer">
+    <div class="drawer-header">
+      <h2>Keyboard Center</h2>
+      <button class="close-drawer" id="close-keyboard-drawer">Close ✕</button>
+    </div>
+
+    <div class="section-title" style="margin-top:0;">Type Text to Screen</div>
+    <div class="typing-box">
+      <textarea id="type-input" class="typing-textarea" placeholder="Type message or search query here..."></textarea>
+      <button class="type-send-btn" id="type-send-btn">Send Text to PC</button>
+    </div>
+
+    <div class="section-title">Quick Utility Keys</div>
+    <div class="keys-grid">
+      <button class="key-btn" data-key="BackSpace">Backspace</button>
+      <button class="key-btn" data-key="Return">Enter</button>
+      <button class="key-btn" data-key="Tab">Tab</button>
+      <button class="key-btn" data-key="Escape">Esc</button>
+      <button class="key-btn" data-key="ctrl+a">Ctrl+A</button>
+      <button class="key-btn" data-key="ctrl+c">Ctrl+C</button>
+      <button class="key-btn" data-key="ctrl+v">Ctrl+V</button>
+      <button class="key-btn" data-key="ctrl+z">Ctrl+Z</button>
+      <button class="key-btn" data-key="Delete">Delete</button>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDE DRAWER: MOUSE CONTROL CENTER -->
+  <div class="drawer-tab-right" id="mouse-tab">🎮 Mouse Center</div>
   <div class="mouse-drawer" id="mouse-drawer">
     <div class="drawer-header">
       <h2>Mouse Control Center</h2>
-      <button class="close-drawer" id="close-drawer">Close ✕</button>
+      <button class="close-drawer" id="close-mouse-drawer">Close ✕</button>
     </div>
 
     <!-- Mode Selector: Virtual vs Physical -->
@@ -486,10 +608,17 @@
     const screenshotImg = document.getElementById('screenshot-img');
     const closeBtn = document.getElementById('close-btn');
 
-    // Drawer Elements
-    const drawerTab = document.getElementById('drawer-tab');
+    // Keyboard Drawer Elements
+    const keyboardTab = document.getElementById('keyboard-tab');
+    const keyboardDrawer = document.getElementById('keyboard-drawer');
+    const closeKeyboardDrawerBtn = document.getElementById('close-keyboard-drawer');
+    const typeInput = document.getElementById('type-input');
+    const typeSendBtn = document.getElementById('type-send-btn');
+
+    // Mouse Drawer Elements
+    const mouseTab = document.getElementById('mouse-tab');
     const mouseDrawer = document.getElementById('mouse-drawer');
-    const closeDrawerBtn = document.getElementById('close-drawer');
+    const closeMouseDrawerBtn = document.getElementById('close-mouse-drawer');
     const tabVirtual = document.getElementById('tab-virtual');
     const tabPhysical = document.getElementById('tab-physical');
     const contentVirtual = document.getElementById('content-virtual');
@@ -498,10 +627,13 @@
     let heartbeatTimer = null;
 
     // Drawer Open/Close Logic
-    drawerTab.addEventListener('click', () => mouseDrawer.classList.add('open'));
-    closeDrawerBtn.addEventListener('click', () => mouseDrawer.classList.remove('open'));
+    keyboardTab.addEventListener('click', () => keyboardDrawer.classList.add('open'));
+    closeKeyboardDrawerBtn.addEventListener('click', () => keyboardDrawer.classList.remove('open'));
 
-    // Switch between Virtual and Physical tabs
+    mouseTab.addEventListener('click', () => mouseDrawer.classList.add('open'));
+    closeMouseDrawerBtn.addEventListener('click', () => mouseDrawer.classList.remove('open'));
+
+    // Switch between Virtual and Physical tabs in Mouse Drawer
     tabVirtual.addEventListener('click', () => {
       tabVirtual.classList.add('active');
       tabPhysical.classList.remove('active');
@@ -564,7 +696,23 @@
       set(commandRef, cmd);
     }
 
-    // Continuous Hold Logic
+    // Typing and Special Keys Handlers
+    typeSendBtn.addEventListener('click', () => {
+      const text = typeInput.value;
+      if (text) {
+        set(ref(db, '/device/type_text'), text);
+        typeInput.value = '';
+      }
+    });
+
+    document.querySelectorAll('.key-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-key');
+        set(ref(db, '/device/key_press'), key);
+      });
+    });
+
+    // Continuous Hold Logic for Mouse
     let moveInterval = null;
 
     function startMoving(btnElement, cmd) {
@@ -609,7 +757,7 @@
       const isSpace = e.key === ' ' || e.code === 'Space';
 
       if (isArrow || isSpace) {
-        e.preventDefault(); // Prevent page scrolling
+        e.preventDefault();
         if (activeKeys[e.key] || activeKeys[e.code]) return;
         activeKeys[e.key] = true;
         activeKeys[e.code] = true;
@@ -629,9 +777,7 @@
       if (isArrow || isSpace) {
         activeKeys[e.key] = false;
         activeKeys[e.code] = false;
-        if (isArrow) {
-          stopMoving();
-        }
+        if (isArrow) stopMoving();
       }
     });
 
