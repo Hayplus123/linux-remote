@@ -289,6 +289,30 @@
     .online .dot { background-color: #3fb950; box-shadow: 0 0 8px #3fb950; }
     .offline .dot { background-color: #f85149; }
 
+    /* LIVE PREVIEW SCREENSHOT STYLES */
+    .preview-container {
+      margin-bottom: 16px;
+      background: #21262d;
+      border: 1px solid #363b42;
+      border-radius: 16px;
+      padding: 8px;
+      overflow: hidden;
+    }
+    .preview-img {
+      width: 100%;
+      max-height: 180px;
+      object-fit: contain;
+      border-radius: 10px;
+      display: none;
+      background: #0d1117;
+      cursor: pointer;
+    }
+    .preview-placeholder {
+      font-size: 13px;
+      color: #8b949e;
+      padding: 20px 0;
+    }
+
     h1 { font-size: 22px; margin-bottom: 20px; color: #f0f6fc; }
     
     .section-title {
@@ -438,7 +462,7 @@
     .send-btn:active:not(:disabled) { background: #2ea043; }
     .send-btn:disabled, .message-input:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* Modal Overlay Styles */
+    /* Modal Overlay Styles for Zooming */
     .modal-overlay {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
@@ -451,10 +475,10 @@
 </head>
 <body>
 
-  <!-- POP-UP MODAL FOR SCREENSHOT -->
+  <!-- POP-UP MODAL FOR ZOOMED SCREENSHOT -->
   <div class="modal-overlay" id="screenshot-modal">
-    <img id="screenshot-img" src="" alt="Live Screenshot">
-    <button class="close-btn" id="close-btn">Close Capture</button>
+    <img id="modal-screenshot-img" src="" alt="Zoomed Screenshot">
+    <button class="close-btn" id="close-btn">Close Zoom</button>
   </div>
 
   <!-- LEFT SIDE DRAWER: KEYBOARD CENTER -->
@@ -535,7 +559,7 @@
       <div class="physical-box">
         <div class="physical-status">⌨️ Keyboard Mode Active</div>
         <p style="font-size: 13px; color: #8b949e; line-height: 1.4;">
-          Hold <b>Arrow Keys</b> to move cursor. Tap the <b>Spacebar</b> to Left Click!
+          Hold <b>Arrow Keys</b> to move cursor. Tap the <b>Spacebar</b> to Left Click! Scroll mouse wheel to scroll page.
         </p>
         <div class="key-badge-container">
           <div></div>
@@ -554,6 +578,12 @@
     <div id="status-badge" class="status-badge offline">
       <span class="dot"></span>
       <span id="status-text">CONNECTING...</span>
+    </div>
+
+    <!-- LIVE SNAPSHOT PREVIEW DISPLAY (ABOVE CONTROL CENTER) -->
+    <div class="preview-container">
+      <div id="preview-placeholder" class="preview-placeholder">Live screen preview will appear here...</div>
+      <img id="live-preview-img" class="preview-img" alt="Live Screen Preview" title="Click to zoom">
     </div>
 
     <h1>Control Center</h1>
@@ -621,8 +651,11 @@
     const sendMsgBtn = document.getElementById('btn-send-msg');
 
     const modal = document.getElementById('screenshot-modal');
-    const screenshotImg = document.getElementById('screenshot-img');
+    const modalScreenshotImg = document.getElementById('modal-screenshot-img');
     const closeBtn = document.getElementById('close-btn');
+
+    const livePreviewImg = document.getElementById('live-preview-img');
+    const previewPlaceholder = document.getElementById('preview-placeholder');
 
     // Keyboard Drawer Elements
     const keyboardTab = document.getElementById('keyboard-tab');
@@ -641,6 +674,7 @@
     const contentPhysical = document.getElementById('content-physical');
 
     let heartbeatTimer = null;
+    let autoScreenshotTimer = null;
 
     // Drawer Open/Close Logic
     keyboardTab.addEventListener('click', () => keyboardDrawer.classList.add('open'));
@@ -694,6 +728,14 @@
       volumeSlider.disabled = false;
       popupInput.disabled = false;
       sendMsgBtn.disabled = false;
+
+      // Start auto taking snapshots every 5 seconds when online
+      if (!autoScreenshotTimer) {
+        sendCommand('screenshot'); // Take one immediately
+        autoScreenshotTimer = setInterval(() => {
+          sendCommand('screenshot');
+        }, 5000);
+      }
     }
 
     function setOffline() {
@@ -704,6 +746,11 @@
       volumeSlider.disabled = true;
       popupInput.disabled = true;
       sendMsgBtn.disabled = true;
+
+      if (autoScreenshotTimer) {
+        clearInterval(autoScreenshotTimer);
+        autoScreenshotTimer = null;
+      }
     }
 
     function sendCommand(cmd, confirmMessage = null) {
@@ -794,20 +841,6 @@
       }
     });
 
-    // Physical Mouse Wheel Listener (Scrolls your Linux PC when you scroll on this device)
-    window.addEventListener('wheel', (e) => {
-      if (!mouseDrawer.classList.contains('open') || !tabPhysical.classList.contains('active')) return;
-      
-      e.preventDefault();
-      
-      // DeltaY is negative when scrolling up, positive when scrolling down
-      if (e.deltaY < 0) {
-        sendCommand('scroll_up');
-      } else {
-        sendCommand('scroll_down');
-      }
-    }, { passive: false });
-
     window.addEventListener('keyup', (e) => {
       const isArrow = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
       const isSpace = e.key === ' ' || e.code === 'Space';
@@ -818,6 +851,18 @@
         if (isArrow) stopMoving();
       }
     });
+
+    // Physical Mouse Wheel Listener
+    window.addEventListener('wheel', (e) => {
+      if (!mouseDrawer.classList.contains('open') || !tabPhysical.classList.contains('active')) return;
+      
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        sendCommand('scroll_up');
+      } else {
+        sendCommand('scroll_down');
+      }
+    }, { passive: false });
 
     window.addEventListener('mouseup', stopMoving);
     window.addEventListener('touchend', stopMoving);
@@ -840,18 +885,26 @@
 
     popupInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMsgBtn.click(); });
 
-    // Screenshot Modal Listeners
+    // Live Screenshot Display & Modal Zoom Listeners
     onValue(ref(db, '/device/last_screenshot'), (snapshot) => {
       const imageDataUrl = snapshot.val();
       if (imageDataUrl) {
-        screenshotImg.src = imageDataUrl;
+        livePreviewImg.src = imageDataUrl;
+        livePreviewImg.style.display = 'block';
+        previewPlaceholder.style.display = 'none';
+      }
+    });
+
+    // Clicking the live preview opens the zoomed modal viewer
+    livePreviewImg.addEventListener('click', () => {
+      if (livePreviewImg.src) {
+        modalScreenshotImg.src = livePreviewImg.src;
         modal.classList.add('active');
       }
     });
 
     closeBtn.addEventListener('click', () => {
       modal.classList.remove('active');
-      set(ref(db, '/device/last_screenshot'), null);
     });
 
     document.getElementById('btn-screenshot').addEventListener('click', () => sendCommand('screenshot'));
